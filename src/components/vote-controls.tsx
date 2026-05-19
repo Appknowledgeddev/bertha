@@ -86,7 +86,7 @@ export function VoteControls({
             ? { scale: [1, 1.08, 1], y: [0, -3, 0] }
             : { scale: 1, y: 0 }
         }
-        transition={{ type: "spring", stiffness: 260, damping: 18, mass: 0.8 }}
+        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
       >
         <AnimatePresence>
           {burstVote === 1 ? (
@@ -137,7 +137,7 @@ export function VoteControls({
             ? { scale: [1, 1.08, 1], y: [0, 3, 0] }
             : { scale: 1, y: 0 }
         }
-        transition={{ type: "spring", stiffness: 260, damping: 18, mass: 0.8 }}
+        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
       >
         <AnimatePresence>
           {burstVote === -1 ? (
