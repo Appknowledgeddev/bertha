@@ -20,6 +20,7 @@ export function VoteControls({
   const [downvotes, setDownvotes] = useState(initialDownvotes);
   const [currentVote, setCurrentVote] = useState<-1 | 0 | 1>(initialVote);
   const [burstVote, setBurstVote] = useState<-1 | 0 | 1>(0);
+  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -35,26 +36,33 @@ export function VoteControls({
   }, [burstVote]);
 
   const handleVote = async (voteValue: -1 | 1) => {
-    if (isPending || currentVote === voteValue) {
+    if (isPending) {
       return;
     }
+
+    const nextVoteValue = currentVote === voteValue ? 0 : voteValue;
+    setError(null);
 
     const response = await fetch(`/api/feedback/${feedbackId}/vote`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ voteValue }),
+      body: JSON.stringify({ voteValue: nextVoteValue }),
     });
 
     if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as
+        | { error?: string }
+        | null;
+      setError(payload?.error ?? "Could not update vote.");
       return;
     }
 
     const payload = (await response.json()) as {
       upvotes: number;
       downvotes: number;
-      currentVote: -1 | 1;
+      currentVote: -1 | 0 | 1;
     };
 
     setUpvotes(payload.upvotes);
@@ -69,8 +77,8 @@ export function VoteControls({
       <motion.button
         className={`voteRail${currentVote === 1 ? " voteRailActive" : ""}`}
         onClick={() => handleVote(1)}
-        disabled={isPending || currentVote === 1}
-        title="Upvote this request"
+        disabled={isPending}
+        title={currentVote === 1 ? "Remove upvote" : "Upvote this request"}
         whileHover={{ y: -2, scale: 1.02 }}
         whileTap={{ scale: 0.94 }}
         animate={
@@ -120,8 +128,8 @@ export function VoteControls({
       <motion.button
         className={`voteRail voteRailDown${currentVote === -1 ? " voteRailActive" : ""}`}
         onClick={() => handleVote(-1)}
-        disabled={isPending || currentVote === -1}
-        title="Downvote this request"
+        disabled={isPending}
+        title={currentVote === -1 ? "Remove downvote" : "Downvote this request"}
         whileHover={{ y: 2, scale: 1.02 }}
         whileTap={{ scale: 0.94 }}
         animate={
@@ -167,6 +175,8 @@ export function VoteControls({
           </motion.span>
         </AnimatePresence>
       </motion.button>
+
+      {error ? <p className="voteError">{error}</p> : null}
     </div>
   );
 }

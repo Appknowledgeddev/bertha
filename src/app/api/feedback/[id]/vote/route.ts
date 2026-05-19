@@ -9,9 +9,10 @@ export async function POST(
 ) {
   try {
     const body = (await request.json()) as { voteValue?: number };
-    const voteValue = body.voteValue === -1 ? -1 : body.voteValue === 1 ? 1 : null;
+    const voteValue =
+      body.voteValue === -1 ? -1 : body.voteValue === 1 ? 1 : body.voteValue === 0 ? 0 : null;
 
-    if (!voteValue) {
+    if (voteValue === null) {
       return NextResponse.json(
         { error: "A vote direction is required." },
         { status: 400 },
@@ -47,7 +48,10 @@ export async function POST(
   } catch (error) {
     console.error("[Birtha Feedback] Failed to update vote", error);
     return NextResponse.json(
-      { error: "Could not update vote." },
+      {
+        error:
+          error instanceof Error ? error.message : "Could not update vote.",
+      },
       { status: 500 },
     );
   }

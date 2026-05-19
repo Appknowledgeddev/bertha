@@ -8,41 +8,6 @@ export const feedbackStatuses = [
   "Completed",
 ] as const;
 
-const demoFeedback: FeedbackRequest[] = [
-  {
-    id: "demo-1",
-    title: "Send trip reminders automatically",
-    description: "Let organisers schedule reminder nudges before payment and RSVP deadlines.",
-    category: "Feature Requests",
-    status: "In Review",
-    author_name: "Bud",
-    upvotes: 12,
-    downvotes: 1,
-    created_at: new Date().toISOString(),
-    comments: [
-      {
-        id: "demo-comment-1",
-        feedback_id: "demo-1",
-        author_name: "Amy",
-        body: "This would make event follow-up much easier.",
-        created_at: new Date().toISOString(),
-      },
-    ],
-  },
-  {
-    id: "demo-2",
-    title: "Show payment status on one timeline",
-    description: "Put invites, payments, and follow-ups in one clear organiser view.",
-    category: "Product Ideas",
-    status: "Planned",
-    author_name: "Amy",
-    upvotes: 7,
-    downvotes: 0,
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
-    comments: [],
-  },
-];
-
 function attachCommentsToFeedback(
   feedbackRows: Omit<FeedbackRequest, "comments">[],
   comments: FeedbackComment[],
@@ -64,7 +29,7 @@ function attachCommentsToFeedback(
 
 export async function getFeedbackRequests(): Promise<FeedbackRequest[]> {
   if (!hasSupabaseEnv) {
-    return demoFeedback;
+    return [];
   }
 
   const supabase = createSupabaseAdmin();
@@ -75,7 +40,7 @@ export async function getFeedbackRequests(): Promise<FeedbackRequest[]> {
 
   if (error) {
     console.error("[Birtha Feedback] Unable to load feedback requests", error);
-    return demoFeedback;
+    return [];
   }
 
   const feedbackRows = (data ?? []) as Omit<FeedbackRequest, "comments">[];
@@ -103,7 +68,7 @@ export async function getFeedbackRequests(): Promise<FeedbackRequest[]> {
 
 export async function getFeedbackRequestById(id: string) {
   if (!hasSupabaseEnv) {
-    return demoFeedback.find((item) => item.id === id) ?? null;
+    return null;
   }
 
   const supabase = createSupabaseAdmin();
@@ -187,7 +152,7 @@ export async function getFeedbackUserVotes(voterToken?: string) {
 export async function setFeedbackVote(input: {
   feedbackId: string;
   voterToken: string;
-  voteValue: -1 | 1;
+  voteValue: -1 | 0 | 1;
 }) {
   const supabase = createSupabaseAdmin();
   const { feedbackId, voterToken, voteValue } = input;
@@ -221,7 +186,7 @@ export async function setFeedbackVote(input: {
   if (previousVote === voteValue) {
     return {
       item: currentItem,
-      currentVote: previousVote,
+      currentVote: previousVote ?? 0,
     };
   }
 
@@ -244,7 +209,17 @@ export async function setFeedbackVote(input: {
     nextDownvotes += 1;
   }
 
-  if (previousVote) {
+  if (previousVote && voteValue === 0) {
+    const { error: deleteVoteError } = await supabase
+      .from("feedback_votes")
+      .delete()
+      .eq("feedback_id", feedbackId)
+      .eq("voter_token", voterToken);
+
+    if (deleteVoteError) {
+      throw deleteVoteError;
+    }
+  } else if (previousVote) {
     const { error: updateVoteError } = await supabase
       .from("feedback_votes")
       .update({ vote_value: voteValue })

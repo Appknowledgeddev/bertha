@@ -346,6 +346,13 @@ textarea {
   gap: 8px;
 }
 
+.voteError {
+  margin: 4px 0 0;
+  color: #c33d37;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .voteRail {
   position: relative;
   overflow: hidden;
