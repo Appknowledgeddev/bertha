@@ -1,6 +1,23 @@
 import { createFeedbackRequest } from "@/lib/feedback";
 import { NextResponse } from "next/server";
 
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof error.message === "string"
+  ) {
+    return error.message;
+  }
+
+  return "Could not create feedback request.";
+}
+
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as {
@@ -28,15 +45,8 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("[Birtha Feedback] Failed to create feedback", error);
 
-    if (error instanceof Error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 500 },
-      );
-    }
-
     return NextResponse.json(
-      { error: "Could not create feedback request." },
+      { error: getErrorMessage(error) },
       { status: 500 },
     );
   }
